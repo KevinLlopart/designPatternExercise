@@ -1,0 +1,1 @@
+public interface CartesienPolaire extends Cartesien, Polaire {}

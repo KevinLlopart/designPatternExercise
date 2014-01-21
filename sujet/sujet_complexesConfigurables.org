@@ -1,0 +1,211 @@
+* A faire pour le 29 janvier, 13h00
+
+Définir des complexes configurables en suivant les instructions suivantes.
+
+* Complexes configurables
+
+On définit pour les complexes une nouvelle interface qui autorise la
+configuration de chaque complexe.
+On implémente ensuite cette interface en utilisant la technique de
+l'agrégation avec délégation. 
+Une configuration permet de modifier la représentation de l'état ainsi
+que les stratégies de calcul. 
+
+On pourra réutiliser certaines classes développpées pour un TP fourni.
+
+** Définition de complexes configurables
+
+On utilise une hiérarchie d'interfaces, décomposant l'interface en deux
+parties, celle basse et celle haute. Une classe implémente finalement
+l'interface. 
+
+*** interface AccesseursComplexe
+partie basse d'un complexe : les accesseurs
+
+*** interface CorpsComplexes
+partie haute d'un complexe : les opérations algébriques
+
+*** interface FabriqueComplexes
+interface regroupant les méthodes permettant de fabriquer des complexes
+
+Pratique : 
+On définit un premier complexe qui sert de fabrique pour les suivants.
+
+**** creer
+méthodes dites fabriques (une des formes du pattern Factory)
+
+*** interface ComplexeConfigurable extends FabriqueComplexes, AccesseursComplexe, CorpsComplexes 
+extension des trois précédentes interfaces pour permettre la configuration 
+
+*** class ComplexeConfigurableAgregationDelegation implements ComplexeConfigurable
+implémentation de l'interface ComplexeConfigurable utilisant
+l'agrégation avec délégation.
+L'accès aux coordonnées est délégué à l'état, le calcul des opérations à
+la configuration.
+**** état : interface AccesseursComplexe
+L'état est réifié. Tout objet implémentant l'interface
+AccesseursComplexe peut être utilisé pour représenté l'état. Un
+changement de représentation devient possible.
+(pattern State)
+**** configuration : class ConfigurationComplexe 
+***** fabrique d'états : FabriqueEtatComplexe
+Elle permet de créer un état, ce qui est utile lors de la construction
+d'un complexe, ou lors d'un changement de représentation de l'état. 
+(une des formes du pattern Factory)
+***** strategies de calcul : StrategiesComplexe
+Six stratégies (zero, un, somme, produit, testEgalite, representation)
+utilisées pour tous les calculs réalisés
+(une forme dégénérée du pattern Facade)
+
+* Etats
+
+On réutilise les interfaces et les classes d'implémentation des points
+aux coordonnées cartésiennes et polaires respectivement. Une nouvelle
+implémentation est donnée, associant à chaque point les deux
+représentations. Cette classe permet de réaliser une seule fois les
+conversions entre coordonnées, lors de la construction, plutôt qu'à
+chaque accès utilisant le système alternatif de coordonnées.
+Cette classe est ensuite adaptée à l'interface AccesseursComplexe dédiée
+aux accesseurs des complexes.
+  
+** Définition d'états
+
+*** interface AccesseursComplexe 
+interface décrivant les accès possibles aux coordonnées d'un complexe
+(avec le vocabulaire propre aux complexes, et non getX, getY, getRho, getTheta)
+
+*** interface CartesienPolaire extends Cartesien, Polaire 
+interfaces réutilisées décrivant les accès possibles aux coordonnées d'un point
+(avec le vocabulaire propre aux points)
+
+*** class CouplePol implements Polaire
+implémentation réutilisée d'un point en coordonnées polaires 
+
+*** class CoupleCar implements Cartesien
+implémentation réutilisée d'un point en coordonnées cartésiennes
+
+*** class FacadeCartesienPolaire implements CartesienPolaire 
+Cette nouvelle classe d'implémentation utilise simultanément les deux systèmes de
+coordonnées. Elle mémorise donc quatre valeurs au lieu de deux valeurs
+dans les autres classes d'implémentation.
+(pattern Facade)
+**** Cartesien c;
+**** Polaire p;
+
+*** class AdaptateurCartesienPolaire implements AccesseursComplexe 
+Cette classe permet l'adaptation de l'interface CartesienPolaire à
+AccesseursComplexe. Elle est implémentée par une simple délégation.
+(pattern Adapter)
+**** CartesienPolaire cp 
+
+** Fabrique d'états
+
+On définit et implémente des fabriques pour les points et les complexes.
+(pattern Factory)
+
+*** interface FabriqueCartesienPolaire 
+**** creer
+
+*** interface FabriqueEtatComplexe
+**** creerEtat
+**** clonerEtat
+
+*** class FabriqueAdaptateurCartesienPolaire implements FabriqueEtatComplexe 
+Cette classe fabrique des états pour les complexes en adaptant un
+CartesienPolaire créé par une fabrique agrégée.
+**** fabrique de cartésiens et polaires : FabriqueCartesienPolaire
+**** equals
+Deux fabriques d'adaptateurs de cartésiens-polaires sont égales si elles
+utilisent des fabriques de cartésiens-polaires équivalentes
+(présentement, il n'en existe qu'une puisque la classe
+FabriqueFacadeCartesienPolaire  est une classe singleton.
+*** class FabriqueFacadeCartesienPolaire implements FabriqueCartesienPolaire
+Cette classe permet de fabriquer des cartésiens-polaires en utilisant la façade 
+FacadeCartesienPolaire. C'est une classe singleton.
+(pattern singleton (classe final, constructeur privé, variable de classe
+publique donnant le singleton)) 
+
+* Stratégies
+
+Les stratégies sont définies par deux interfaces. Elles
+correspondent à des réifications de fonctions.
+
+(réification : principes communs aux patterns Strategy, Command, Visitor)
+
+** Interfaces
+
+Une interface définissant une stratégie prend en paramètre les types des
+arguments et celui du résultat. Elle possède une méthode, permettant
+d'exécuter la stratégie.
+
+*** interface Strategie1
+**** ComplexeConfigurable executer(ComplexeConfigurable a)
+
+*** interface Strategie2
+**** ComplexeConfigurable executer(ComplexeConfigurable a, ComplexeConfigurable b)
+
+** Implémentations
+Les stratégies sont définies par des classes implémentant les interfaces
+StrategieN. Elles correspondent à des singletons.
+(pattern Singleton)
+
+*** StrategieZeroEnCar
+*** StrategieUnEnCar
+*** StrategieCarSomme
+*** StrategiePolProduit
+*** StrategieCarEgalite
+*** StrategieCarRepresentation
+ 
+* Configurations
+
+Une configuration se définit à partir d'une fabrique d'états pour
+construire les nouveaux complexes et des stratégies pour les calculs.
+Une classe ConfigurationComplexe définit les configurations.
+
+**  Définition
+
+*** class ConfigurationComplexe
+Une configuration délègue la création d'états à une fabrique d'états et
+les calculs aux stratégies.
+**** FabriqueEtatComplexe fabEtat;
+**** StrategiesComplexe strategies;
+**** equals
+Deux configurations sont équivalentes lorsque leurs fabriques d'états
+sont équivalentes et que leurs stratégies sont égales (il est requis que
+les stratégies sont des singletons). 
+     
+** Assemblage d'une configuration
+
+Une configuration se définit en plusieurs étapes. Tout d'abord, elle est
+initialisée en recevant une fabrique d'états, puis précisée par la
+définition des stratégies. Finalement, elle est baptisée.
+Chaque configuration est définie suivant ce protocole, et une seule
+configuration est définie à la fois.
+(une des formes du pattern Builder) 
+Lorsque la construction d'une configuration se termine, il est vérifié
+si elle n'existe pas déjà : dans ce cas, elle n'est pas construite mais
+celle existante est partagée. Ce partage suppose qu'une notion
+d'équivalence entre les configurations est définie : cf. la méthode
+equals dans ConfigurationComplexe.
+(pattern Flyweight)
+Enfin, la construction est centralisée : 
+il existe un seul objet pour réaliser l'assemblage.
+(pattern singleton)
+
+*** class AssemblageConfigurationComplexe
+
+**** static Map<String, ConfigurationComplexe> registre 
+association entre noms et configurations, avec possibilité de partage
+(plusieurs noms pour la même configuration)
+**** initialiser    
+**** definirStrategieZero
+**** definirStrategieUn
+**** definirStrategieSomme
+**** definirStrategieProduit
+**** definirStrategieEgalite
+**** definirStrategieRepresentation
+**** baptiser
+**** recuperer
+récupération d'une configuration à partir d'un nom en utilisant le registre
+
+
